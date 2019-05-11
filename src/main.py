@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import binom
+import shutil
 
 
 # process the data file to an edge list file of bins
@@ -194,7 +195,7 @@ def get_min_sum(data_dir, metadata, bin_size, shift):
             split_line = line.split()
             bin_range[split_line[0]] = (int(split_line[2]), int(split_line[3]))
 
-    min_sum = None
+    value_list = []
     for filename in os.listdir(data_dir):
 
         count = 0
@@ -214,12 +215,12 @@ def get_min_sum(data_dir, metadata, bin_size, shift):
                 if not intra_chrom:
                     count += 1
 
-        if not min_sum:
-            min_sum = count
-        elif count < min_sum:
-            min_sum = count
+        value_list.append(count)
 
-    return min_sum
+    np_values = np.array(value_list)
+    percent_5 = np.percentile(np_values, 5)
+
+    return percent_5
 
 
 # generate the mean of sum values of all the cells
@@ -422,7 +423,7 @@ def generate_analyzed_output(sum_matrix, sum_value, metadata, bin_size, shift, n
     # unique, counts = np.unique(data, return_counts=True)
     M = ((count_N - count_X) ** 2 - sum_reduction) / 2
     count1 = 0
-    p_max = calculate_pmax(M, sum_value)
+    p_value_thresh = calculate_pval_thresh(M, sum_value)
     data = np.triu(data, k=-1)
     out = open(output_file, "w")
     out.write("{} {} {} {}\n".format("bin1", "bin2", "count", "p_value"))
@@ -431,7 +432,7 @@ def generate_analyzed_output(sum_matrix, sum_value, metadata, bin_size, shift, n
         for j in range(0, cols):
             if data[i][j] != 0:
                 value = int(data[i][j])
-                p_value = calculate_f_sum(number_of_cells, value, p_max)
+                p_value = calculate_f_sum(number_of_cells, value, p_value_thresh)
                 if p_value <= threshold(M, p_value_user):
                     count1 += 1
                     out.write("{} {} {} {}\n".format(i, j, value, p_value))
@@ -449,7 +450,7 @@ def calculate_f_sum(n, t, p_max):
     return sum_f
 
 
-def calculate_pmax(M, sum_value):
+def calculate_pval_thresh(M, sum_value):
     p_max = sum_value / M
     return p_max
 
@@ -572,6 +573,12 @@ def main():
     # generate the output file with significant inter-chromosome interactions
     generate_analyzed_output(sum_matrix, sum_value, metadata, bin_size, shift, number_of_cells, final_output_dir,
                              p_value_user, zero_bin, threshold_percentage)
+
+    # clean up temporary files
+    try:
+        shutil.rmtree(os.path.join(final_output_dir, "temp"))
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
 
 
 if __name__ == '__main__':
