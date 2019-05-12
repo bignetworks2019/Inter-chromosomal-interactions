@@ -360,7 +360,7 @@ def write_zero_bin_output(zero_bin_list, output_dir, shift, bin_size, metadata):
 
 # generate the final analysis
 def generate_analyzed_output(sum_matrix, sum_value, metadata, bin_size, shift, number_of_cells, output_dir,
-                             p_value_user, zero_bin, threshold_percentage):
+                             p_value_user, zero_bin):
     if shift == '0':
         chrom_bin_range = "{}/chrom_bins_range_{}.txt".format(metadata, bin_size, shift)
         output_file = os.path.join(output_dir, "output_{}.txt".format(bin_size))
@@ -500,17 +500,19 @@ def main():
     parser = ArgumentParser("main",
                             formatter_class=ArgumentDefaultsHelpFormatter,
                             conflict_handler='resolve')
-    parser.add_argument("--data", required=True, help="Path for the root directory of the data files")
-    parser.add_argument("--output", required=True, help="Output directory")
-    parser.add_argument("--bin-size", required=True, help="Bin size, Eg: 1M, 500k")
-    parser.add_argument("--sliding-window", default='0', help="Sliding windows for the bins")
-    parser.add_argument("--config-file", required=True, help="Config file specifying the chromosome sizes")
-    parser.add_argument("--threshold", default='0.1', help="Threshold as a percentage of the cells, Eg: 0.1, 0.2")
+    parser.add_argument("--data", required=True, help="Path for the root directory of the data files.")
+    parser.add_argument("--output", required=True,
+                        help="Output directory to create temporary files and the output file.")
+    parser.add_argument("--bin-size", required=True, help="Bin size, Eg: 1M, 500k.")
+    parser.add_argument("--sliding-window", default='0', help="Sliding windows for the bins.")
+    parser.add_argument("--config-file", required=True, help="Config file specifying the chromosome sizes.")
     parser.add_argument("--low", action='store_true', default=False)
     parser.add_argument("--medium", action='store_true', default=False)
     parser.add_argument("--high", action='store_true', default=False)
-    parser.add_argument("--zero-bin", action='store_true', default=False)
-    parser.add_argument("--p-value", default='0.05', help="P Value")
+    parser.add_argument("--zero-bin", action='store_true', default=False,
+                        help="If this option is enabled, " +
+                             "the tool outputs an additional file specifying the bins with no interactions.")
+    parser.add_argument("--p-value", default='0.05', help="Cut-off p value.")
 
     args = parser.parse_args()
     data_dir = args.data
@@ -518,7 +520,6 @@ def main():
     shift = args.sliding_window
     config_file = args.config_file
     bin_size = args.bin_size
-    threshold_percentage = args.threshold
     p_value_user = float(args.p_value)
     zero_bin = args.zero_bin
 
@@ -568,11 +569,9 @@ def main():
     sum_matrix = generate_sum_matrix(output_edge_dir, metadata, bin_size, shift,
                                      os.path.join(final_output_dir, "temp", "sum-matrix"))
 
-    print("Sum Value: {}".format(sum_value))
-
     # generate the output file with significant inter-chromosome interactions
     generate_analyzed_output(sum_matrix, sum_value, metadata, bin_size, shift, number_of_cells, final_output_dir,
-                             p_value_user, zero_bin, threshold_percentage)
+                             p_value_user, zero_bin)
 
     # clean up temporary files
     try:
