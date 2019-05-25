@@ -6,7 +6,7 @@ This repository provides a tool to analyze and output significant inter-chromoso
 
 #### Example
 To run the tool on the oocyte_NSN data, execute the following command from the project home directory:<br/>
-	``python src/main.py --data "data" --bin-size "500k" --config-file "metadata/mm9_chrom_sizes.txt" --output "output/oocyte_SN"``
+	``python src/main.py --data "sample-data/data" --bin-size "500k" --config-file "metadata/mm9_chrom_sizes.txt" --output "sample-data/output_oocyte_NSN_500k.txt"``
   
 Above command provides the bin size as 500,000. 
   
