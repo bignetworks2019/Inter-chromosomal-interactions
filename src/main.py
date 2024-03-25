@@ -8,6 +8,7 @@ import math
 from scipy.stats import binom
 import shutil
 import tempfile
+import statistics
 
 
 # process the data file to an edge list file of bins
@@ -255,6 +256,42 @@ def get_mean(data_dir, metadata, bin_size, shift, number_of_cells):
     return sum / number_of_cells
 
 
+# generate the median of sum values of all the cells
+def get_median(data_dir, metadata, bin_size, shift, number_of_cells):
+    if shift == '0':
+        chrom_bin_range = "{}/chrom_bins_range_{}.txt".format(metadata, bin_size)
+    else:
+        chrom_bin_range = "{}/chrom_bins_range_{}_shift_{}.txt".format(metadata, bin_size, shift)
+
+    bin_range = {}
+    with open(chrom_bin_range) as f:
+        for line in f:
+            split_line = line.split()
+            bin_range[split_line[0]] = (int(split_line[2]), int(split_line[3]))
+
+    li_count = []
+    for filename in os.listdir(data_dir):
+        count = 0
+        with open(os.path.join(data_dir, filename)) as f:
+            for line in f:
+                split_line = line.split()
+                edge1 = int(split_line[0])
+                edge2 = int(split_line[1])
+
+                intra_chrom = False
+                for key, value in bin_range.items():
+                    if value[0] <= edge1 <= value[1]:
+                        if value[0] <= edge2 <= value[1]:
+                            intra_chrom = True
+                            break
+
+                if not intra_chrom:
+                    count += 1
+        li_count.append(count)
+
+    return statistics.median(li_count)
+
+
 # generate the summation matrix
 def generate_sum_matrix(data_dir, metadata, bin_size, shift, output_dir):
     # create output directory if not exists
@@ -493,6 +530,7 @@ def main():
     parser.add_argument("--min", action='store_true', default=False)
     parser.add_argument("--mean", action='store_true', default=False)
     parser.add_argument("--max", action='store_true', default=False)
+    parser.add_argument("--median", action='store_true', default=False)
     parser.add_argument("--zero-bin-file", default='null',
                         help="If specified, the program outputs a file that lists the bins with no interactions.")
     parser.add_argument("--p-value", default='0.05', help="P Value")
@@ -510,6 +548,8 @@ def main():
         level = "min"
     elif args.mean:
         level = "mean"
+    elif args.median:
+        level = "median"
     else:
         level = "max"
 
@@ -546,6 +586,8 @@ def main():
         sum_value = get_max_sum(output_edge_dir, metadata, bin_size, shift)
     elif level == "mean":
         sum_value = get_mean(output_edge_dir, metadata, bin_size, shift, number_of_cells)
+    elif level == "median":
+        sum_value = get_median(output_edge_dir, metadata, bin_size, shift, number_of_cells)
     else:
         sum_value = get_min_sum(output_edge_dir, metadata, bin_size, shift)
 
